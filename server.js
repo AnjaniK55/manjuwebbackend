@@ -11,15 +11,18 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy headers for correct client IP detection on Render
+app.set('trust proxy', 1);
+
 // Apply secure HTTP headers and allow cross-origin resource access
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Apply global rate limiting (max 300 requests per 15 minutes)
+// Apply global rate limiting based on client IP (max 600 requests per 15 minutes)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: 600,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests from this IP. Please try again after 15 minutes.' }
