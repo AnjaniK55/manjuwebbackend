@@ -167,16 +167,18 @@ let isMongoConnected = false;
 
 async function seedDefaultAdmin() {
   try {
-    const userCount = await User.countDocuments({});
-    if (userCount === 0) {
-      const hashedPassword = await bcryptjs.hash('admin123', 10);
+    const adminUser = process.env.ADMIN_USER || 'admin';
+    const adminPass = process.env.ADMIN_PASS || 'admin123';
+    const existing = await User.findOne({ username: adminUser });
+    if (!existing) {
+      const hashedPassword = await bcryptjs.hash(adminPass, 10);
       const defaultAdmin = new User({
-        username: 'admin',
+        username: adminUser,
         password: hashedPassword,
         role: 'administrator'
       });
       await defaultAdmin.save();
-      console.log('>>> [DB SEED] Default administrator account seeded successfully: admin / admin123');
+      console.log(`>>> [DB SEED] Administrator account seeded successfully: ${adminUser}`);
     }
   } catch (err) {
     console.error('>>> [DB SEED ERROR] Failed to seed default admin:', err.message);
@@ -184,17 +186,20 @@ async function seedDefaultAdmin() {
 }
 
 function seedLocalDefaultAdmin() {
+  const adminUser = process.env.ADMIN_USER || 'admin';
+  const adminPass = process.env.ADMIN_PASS || 'admin123';
   const users = readTable('users', []);
-  if (users.length === 0) {
-    bcryptjs.hash('admin123', 10, (err, hashedPassword) => {
+  const existing = users.find(u => u.username === adminUser);
+  if (!existing) {
+    bcryptjs.hash(adminPass, 10, (err, hashedPassword) => {
       if (!err) {
         users.push({
-          username: 'admin',
+          username: adminUser,
           password: hashedPassword,
           role: 'administrator'
         });
         writeTable('users', users);
-        console.log('>>> [LOCAL SEED] Default local administrator account seeded: admin / admin123');
+        console.log(`>>> [LOCAL SEED] Local administrator account seeded: ${adminUser}`);
       }
     });
   }
