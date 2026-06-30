@@ -27,10 +27,23 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim().replace(/\/$/, '')) 
+  : [];
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    if (!origin) return callback(null, true);
+    
+    const normOrigin = origin.replace(/\/$/, '');
+    const isAllowed = allowedOrigins.length === 0 || 
+                      allowedOrigins.includes(normOrigin) || 
+                      normOrigin.endsWith('vercel.app') || 
+                      normOrigin.startsWith('http://localhost') || 
+                      normOrigin.startsWith('http://127.0.0.1') || 
+                      process.env.NODE_ENV !== 'production';
+
+    if (isAllowed) {
       callback(null, true);
     } else {
       callback(new Error('Blocked by CORS policy'));
