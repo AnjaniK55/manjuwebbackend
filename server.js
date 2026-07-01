@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import authRouter from './routes/auth.js';
 import crudRouter from './routes/crud.js';
-import { readTable, writeTable } from './db.js';
+import { readTable, writeTable, isMongoConnected } from './db.js';
 
 dotenv.config();
 
@@ -75,7 +75,11 @@ app.use('/api', crudRouter);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date() });
+  res.json({ 
+    status: 'healthy', 
+    database: isMongoConnected ? 'MongoDB Atlas' : 'Local JSON files',
+    timestamp: new Date() 
+  });
 });
 
 app.listen(PORT, () => {
