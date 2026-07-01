@@ -476,23 +476,32 @@ async function seedDefaultCollections() {
   }
 }
 
-if (process.env.MONGODB_URI) {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    isMongoConnected = true;
-    console.log('>>> [DB STATUS] Connected to MongoDB database successfully.');
-    await seedDefaultAdmin();
-    await seedDefaultCollections();
-  } catch (err) {
-    console.error('>>> [DB WARNING] MongoDB Connection failed. Switching to Local JSON files.');
+// Run database connection in the background so it doesn't block Express server startup
+const connectDB = async () => {
+  if (process.env.MONGODB_URI) {
+    try {
+      console.log('>>> [DB STATUS] Connecting to MongoDB Atlas...');
+      await mongoose.connect(process.env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds instead of hanging
+        socketTimeoutMS: 45000,
+      });
+      isMongoConnected = true;
+      console.log('>>> [DB STATUS] Connected to MongoDB database successfully.');
+      await seedDefaultAdmin();
+      await seedDefaultCollections();
+    } catch (err) {
+      console.error('>>> [DB WARNING] MongoDB Connection failed. Switching to Local JSON files. Error:', err.message);
+      seedLocalDefaultAdmin();
+      seedLocalDefaultData();
+    }
+  } else {
+    console.log('>>> [DB STATUS] MONGODB_URI not configured. Using Local JSON filesystem.');
     seedLocalDefaultAdmin();
     seedLocalDefaultData();
   }
-} else {
-  console.log('>>> [DB STATUS] MONGODB_URI not configured. Using Local JSON filesystem.');
-  seedLocalDefaultAdmin();
-  seedLocalDefaultData();
-}
+};
+
+connectDB();
 
 // --- ABSTRACTED REPOSITORY PATTERN WRAPPERS ---
 
